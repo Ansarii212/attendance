@@ -1,0 +1,111 @@
+<!-- attendance.html -->
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>تقرير الحضور</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      direction: rtl;
+      padding: 20px;
+      background: #f7f7f7;
+      text-align: center;
+    }
+    table {
+      margin: auto;
+      width: 90%;
+      max-width: 800px;
+      border-collapse: collapse;
+      background: white;
+      box-shadow: 0 0 10px #ccc;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 10px;
+    }
+    th {
+      background-color: #eee;
+    }
+    .print-btn {
+      margin-top: 20px;
+      padding: 10px 20px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-size: 16px;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h3>تقرير تحضير الموظفين</h3>
+  <input type="date" id="dateFilter" onchange="loadAttendance()" />
+  <table id="reportTable">
+    <thead>
+      <tr>
+        <th>اسم المعلم</th>
+        <th>الحضور</th>
+        <th>الوقت</th>
+        <th>التاريخ</th>
+        <th>الإحداثيات</th>
+        <th>المسافة (متر)</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+  <button class="print-btn" onclick="window.print()">طباعة التقرير</button>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCr4T8GLRxtf_6LNrokjKvmBOwSkuGO5yQ",
+      authDomain: "hamsa-6009e.firebaseapp.com",
+      databaseURL: "https://hamsa-6009e-default-rtdb.firebaseio.com",
+      projectId: "hamsa-6009e",
+      storageBucket: "hamsa-6009e.appspot.com",
+      messagingSenderId: "998163671039",
+      appId: "1:998163671039:web:d1930ea5b71a3a3fc729ca"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    const managerId = localStorage.getItem("managerId");
+    const tableBody = document.querySelector("#reportTable tbody");
+    const dateFilter = document.getElementById("dateFilter");
+
+    function loadAttendance() {
+      if (!managerId) return;
+      const path = "attendance/" + managerId;
+      tableBody.innerHTML = "";
+
+      onValue(ref(db, path), (snapshot) => {
+        tableBody.innerHTML = "";
+        snapshot.forEach(child => {
+          const data = child.val();
+          if (!dateFilter.value || data.date === dateFilter.value) {
+            const row = `
+              <tr>
+                <td>${data.teacher}</td>
+                <td>${data.status}</td>
+                <td>${data.time}</td>
+                <td>${data.date}</td>
+                <td>${data.lat.toFixed(4)}, ${data.lng.toFixed(4)}</td>
+                <td>${data.distance} م</td>
+              </tr>
+            `;
+            tableBody.innerHTML += row;
+          }
+        });
+      });
+    }
+
+    window.loadAttendance = loadAttendance;
+    window.onload = loadAttendance;
+  </script>
+</body>
+</html>
