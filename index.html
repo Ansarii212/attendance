@@ -41,6 +41,16 @@
 </head>
 <body>
   <h3>تقرير تحضير الموظفين</h3>
+  <!-- أضف هذا الجزء داخل div#managerPage قبل زر "تقرير الحضور" -->
+
+<div style="display: flex; justify-content: center; gap: 10px; align-items: center; margin-top: 20px;">
+  <input type="date" id="dateFilter" style="padding: 10px; font-size: 16px; border: 1px solid #ccc; border-radius: 5px;">
+  <button onclick="loadAttendance()" style="padding: 10px 15px; font-size: 16px; background-color: #2196F3; color: white; border: none; border-radius: 5px;">تم</button>
+  <select id="sortOrder" onchange="loadAttendance()" style="padding: 10px; font-size: 16px; border-radius: 5px;">
+    <option value="desc">الأحدث</option>
+    <option value="asc">الأقدم</option>
+  </select>
+</div>
   <input type="date" id="dateFilter" onchange="loadAttendance()" />
   <table id="reportTable">
     <thead>
@@ -79,30 +89,45 @@
     const dateFilter = document.getElementById("dateFilter");
 
     function loadAttendance() {
-      if (!managerId) return;
-      const path = "attendance/" + managerId;
-      tableBody.innerHTML = "";
+  const tableBody = document.querySelector("#reportTable tbody");
+  if (!currentUserId) return;
 
-      onValue(ref(db, path), (snapshot) => {
-        tableBody.innerHTML = "";
-        snapshot.forEach(child => {
-          const data = child.val();
-          if (!dateFilter.value || data.date === dateFilter.value) {
-            const row = `
-              <tr>
-                <td>${data.teacher}</td>
-                <td>${data.status}</td>
-                <td>${data.time}</td>
-                <td>${data.date}</td>
-                <td>${data.lat.toFixed(4)}, ${data.lng.toFixed(4)}</td>
-                <td>${data.distance} م</td>
-              </tr>
-            `;
-            tableBody.innerHTML += row;
-          }
-        });
-      });
-    }
+  tableBody.innerHTML = "";
+  const dateFilter = document.getElementById("dateFilter").value;
+  const sortOrder = document.getElementById("sortOrder").value;
+  const path = "attendance/" + currentUserId;
+
+  get(ref(db, path)).then(snapshot => {
+    const records = [];
+    snapshot.forEach(child => {
+      const data = child.val();
+      if (!dateFilter || dateFilter === data.date) {
+        records.push(data);
+      }
+    });
+
+    // الترتيب حسب التاريخ
+    records.sort((a, b) => {
+      const aTime = new Date(a.date + ' ' + a.time);
+      const bTime = new Date(b.date + ' ' + b.time);
+      return sortOrder === 'asc' ? aTime - bTime : bTime - aTime;
+    });
+
+    records.forEach(data => {
+      const row = `
+        <tr>
+          <td>${data.teacher}</td>
+          <td>${data.status}</td>
+          <td>${data.time}</td>
+          <td>${data.date}</td>
+          <td>${data.lat.toFixed(4)}, ${data.lng.toFixed(4)}</td>
+          <td>${data.distance} م</td>
+        </tr>
+      `;
+      tableBody.innerHTML += row;
+    });
+  });
+}
 
     window.loadAttendance = loadAttendance;
     window.onload = loadAttendance;
